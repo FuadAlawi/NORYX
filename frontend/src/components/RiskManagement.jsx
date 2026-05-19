@@ -35,7 +35,7 @@ export default function RiskManagement() {
     await fetch(`${API}/risks/${id}?status=${status}`, { method: 'PATCH' });
     fetchRisks();
   };
-
+// to show the level of the risks
   const levels = ['Low', 'Medium', 'High', 'Critical'];
   const getSeverityColor = (impact, likelihood) => {
     const i = levels.indexOf(impact);
