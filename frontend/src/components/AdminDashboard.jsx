@@ -41,9 +41,32 @@ export default function AdminDashboard({ departments }) {
 
   useEffect(() => { load(); const t = setInterval(load, 10000); return () => clearInterval(t); }, [load]);
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // CHANGE 1 — Improved loading state with a spinner instead of plain text.
+  //
+  // OLD CODE:
+  //   if (!stats) return (
+  //     <div style={{ textAlign: 'center', padding: '48px', color: 'var(--text-tertiary)', fontSize: '13px' }}>
+  //       Loading dashboard…
+  //     </div>
+  //   );
+  //
+  // WHY THE NEW ONE IS BETTER:
+  //   A spinning indicator gives the user clear visual feedback that something
+  //   is actively loading, rather than static text which can look like an error
+  //   or a broken page. It feels more polished and professional.
+  // ═══════════════════════════════════════════════════════════════════════════
   if (!stats) return (
-    <div style={{ textAlign: 'center', padding: '48px', color: 'var(--text-tertiary)', fontSize: '13px' }}>
-      Loading dashboard…
+    <div style={{ textAlign: 'center', padding: '64px', color: 'var(--text-tertiary)' }}>
+      <div style={{
+        width: 36, height: 36, margin: '0 auto 14px',
+        border: '3px solid var(--surface-3)',
+        borderTop: '3px solid var(--accent, #6366f1)',
+        borderRadius: '50%',
+        animation: 'spin 0.8s linear infinite',
+      }} />
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <div style={{ fontSize: '13px' }}>Loading dashboard…</div>
     </div>
   );
 
@@ -64,13 +87,34 @@ export default function AdminDashboard({ departments }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
 
       {/* KPI Row */}
-      <div className="g4">
-        {kpis.map(k => (
-          <div className={`card card-sm kpi-card ${k.accent}`} key={k.label}>
-            <div className="card-label">{k.label}</div>
+      {/* ═══════════════════════════════════════════════════════════════════════
+          CHANGE 2 — KPI cards now show a small trend arrow icon next to value.
+          
+          OLD CODE:
             <div className="card-value" style={{ color: k.color }}>{k.value}</div>
-          </div>
-        ))}
+          
+          WHY THE NEW ONE IS BETTER:
+            A static number alone gives no directional context. The arrow icon
+            (▲ for compliance/passed, ▼ for failed) gives instant visual meaning
+            at a glance without adding any extra data or API calls. It makes the
+            dashboard feel like a real analytics tool.
+          ═══════════════════════════════════════════════════════════════════════ */}
+      <div className="g4">
+        {kpis.map(k => {
+          const arrow = k.label === 'Failed'
+            ? <span style={{ fontSize: '13px', marginLeft: '4px', opacity: 0.7 }}>▼</span>
+            : k.label === 'Total Evidence'
+            ? null
+            : <span style={{ fontSize: '13px', marginLeft: '4px', opacity: 0.7 }}>▲</span>;
+          return (
+            <div className={`card card-sm kpi-card ${k.accent}`} key={k.label}>
+              <div className="card-label">{k.label}</div>
+              <div className="card-value" style={{ color: k.color, display: 'flex', alignItems: 'baseline' }}>
+                {k.value}{arrow}
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       {/* Compliance ring + breakdown */}
@@ -159,6 +203,21 @@ export default function AdminDashboard({ departments }) {
         </div>
 
         {/* Department summary */}
+        {/* ═══════════════════════════════════════════════════════════════════
+            CHANGE 3 — Department rows now show a small % badge on the right
+                       instead of just a fraction like "3/10".
+            
+            OLD CODE:
+              <span style={{ fontSize: '11px', color: 'var(--text-tertiary)' }}>
+                {ds?.total ? `${ds.passed}/${ds.total}` : 'No submissions'}
+              </span>
+            
+            WHY THE NEW ONE IS BETTER:
+              A percentage is faster to read and compare across departments than
+              a raw fraction. The colored dot next to the department name also
+              gives instant red/yellow/green status at a glance without needing
+              to read the progress bar below it.
+            ═══════════════════════════════════════════════════════════════════ */}
         <div className="card">
           <div className="sec-head">
             <div className="sec-title">Department Summary</div>
@@ -168,12 +227,23 @@ export default function AdminDashboard({ departments }) {
               {departments.map(d => {
                 const ds = stats.department_stats?.find(s => s.department === d.name);
                 const p  = ds?.total ? Math.round((ds.passed / ds.total) * 100) : 0;
+                const dotColor = !ds?.total ? 'var(--text-tertiary)' : p >= 70 ? 'var(--green)' : p >= 40 ? 'var(--yellow)' : 'var(--red)';
                 return (
                   <div key={d.id}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
-                      <span style={{ fontSize: '12px', color: 'var(--text-primary)', fontWeight: 500 }}>{d.name}</span>
-                      <span style={{ fontSize: '11px', color: 'var(--text-tertiary)' }}>
-                        {ds?.total ? `${ds.passed}/${ds.total}` : 'No submissions'}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
+                        {/* colored status dot */}
+                        <span style={{ width: 7, height: 7, borderRadius: '50%', background: dotColor, display: 'inline-block', flexShrink: 0 }} />
+                        <span style={{ fontSize: '12px', color: 'var(--text-primary)', fontWeight: 500 }}>{d.name}</span>
+                      </div>
+                      {/* percentage badge instead of raw fraction */}
+                      <span style={{
+                        fontSize: '11px', fontWeight: 600,
+                        color: dotColor,
+                        background: ds?.total ? `${dotColor}18` : 'transparent',
+                        padding: '1px 7px', borderRadius: '999px',
+                      }}>
+                        {ds?.total ? `${p}%` : 'No data'}
                       </span>
                     </div>
                     <ProgressBar
