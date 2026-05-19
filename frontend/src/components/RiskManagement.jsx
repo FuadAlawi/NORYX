@@ -75,36 +75,52 @@ export default function RiskManagement() {
         {/* Risk Matrix Visualization */}
         <div className="card">
           <div className="sec-head">
-            <div className="sec-title">Risk Heatmap (5x5)</div>
+            <div className="sec-title">Risk Heatmap (4×4)</div>
             <span className="tag">Likelihood × Impact</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'center', padding: '20px 0' }}>
-            <div className="risk-matrix">
-              {/* Y-axis labels */}
-              <div style={{ gridRow: '1 / span 5', writingMode: 'vertical-rl', transform: 'rotate(180deg)', textAlign: 'center', fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600, letterSpacing: '0.1em' }}>LIKELIHOOD</div>
-              
-              {/* Matrix Grid Generation */}
-              {[4, 3, 2, 1, 0].map((y) => 
-                [0, 1, 2, 3, 4].map((x) => {
-                  const score = x + y;
-                  const bg = score >= 6 ? 'rgba(239, 68, 68, 0.2)' : score >= 3 ? 'rgba(245, 158, 11, 0.2)' : 'rgba(34, 197, 94, 0.2)';
-                  const border = score >= 6 ? 'var(--red-border)' : score >= 3 ? 'var(--yellow-border)' : 'var(--green-border)';
-                  
-                  // Map simplified 4-levels to 5-level grid positions
-                  const mappedLvl = {'Low':1, 'Medium':2, 'High':3, 'Critical':4, 'Very High':4};
-                  const cellRisks = risks.filter(r => (mappedLvl[r.likelihood]||2) === (y+1) && (mappedLvl[r.impact]||2) === (x+1));
+            {(() => {
+              const mappedLvl = { 'Low': 1, 'Medium': 2, 'High': 3, 'Critical': 4, 'Very High': 4 };
+              const activeRisks = risks.filter(r => r.status === 'Open' || r.status === 'Mitigating');
+              const rowLabels = ['V.High', 'High', 'Medium', 'Low'];
+              const colLabels = ['Low', 'Medium', 'High', 'Critical'];
+              const labelStyle = { display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: '6px', fontSize: '10px', color: 'var(--text-secondary)', fontWeight: 500, whiteSpace: 'nowrap' };
 
-                  return (
-                    <div key={`${x}-${y}`} className="risk-matrix-cell" style={{ background: bg, border: `1px solid ${border}` }}>
-                      {cellRisks.length > 0 && <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: score >= 6 ? 'var(--red)' : score >= 3 ? 'var(--yellow)' : 'var(--green)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', boxShadow: '0 0 10px rgba(0,0,0,0.5)' }}>{cellRisks.length}</div>}
-                    </div>
-                  );
-                })
-              )}
-              
-              {/* X-axis labels */}
-              <div style={{ gridColumn: '2 / span 5', textAlign: 'center', fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600, letterSpacing: '0.1em', paddingTop: '8px' }}>IMPACT</div>
-            </div>
+              return (
+                <div className="risk-matrix">
+                  {/* Y-axis label */}
+                  <div style={{ gridRow: '1 / span 4', gridColumn: 1, writingMode: 'vertical-rl', transform: 'rotate(180deg)', textAlign: 'center', fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600, letterSpacing: '0.1em' }}>LIKELIHOOD</div>
+
+                  {/* Row labels (top = Very High, bottom = Low) */}
+                  {rowLabels.map((label, i) => (
+                    <div key={label} style={{ gridRow: i + 1, gridColumn: 2, ...labelStyle }}>{label}</div>
+                  ))}
+
+                  {/* 4×4 cells — y=3 is Very High (row 1), y=0 is Low (row 4) */}
+                  {[3, 2, 1, 0].map((y) =>
+                    [0, 1, 2, 3].map((x) => {
+                      const score = (x + 1) * (y + 1);
+                      const bg     = score >= 9 ? 'rgba(239, 68, 68, 0.2)'   : score >= 4 ? 'rgba(245, 158, 11, 0.2)' : 'rgba(34, 197, 94, 0.2)';
+                      const border = score >= 9 ? 'var(--red-border)'         : score >= 4 ? 'var(--yellow-border)'    : 'var(--green-border)';
+                      const cellRisks = activeRisks.filter(r => (mappedLvl[r.likelihood] || 2) === (y + 1) && (mappedLvl[r.impact] || 2) === (x + 1));
+                      return (
+                        <div key={`${x}-${y}`} className="risk-matrix-cell" style={{ gridRow: 4 - y, gridColumn: x + 3, background: bg, border: `1px solid ${border}` }}>
+                          {cellRisks.length > 0 && <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700, color: '#fff', boxShadow: '0 0 8px rgba(0,0,0,0.4)' }}>{cellRisks.length}</div>}
+                        </div>
+                      );
+                    })
+                  )}
+
+                  {/* Column labels */}
+                  {colLabels.map((label, i) => (
+                    <div key={label} style={{ gridRow: 5, gridColumn: i + 3, textAlign: 'center', fontSize: '10px', color: 'var(--text-secondary)', fontWeight: 500, paddingTop: '4px' }}>{label}</div>
+                  ))}
+
+                  {/* X-axis label */}
+                  <div style={{ gridRow: 6, gridColumn: '3 / span 4', textAlign: 'center', fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600, letterSpacing: '0.1em', paddingTop: '2px' }}>IMPACT</div>
+                </div>
+              );
+            })()}
           </div>
         </div>
 
